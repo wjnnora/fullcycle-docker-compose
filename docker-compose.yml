@@ -1,0 +1,54 @@
+services:
+  mysql:
+    build:
+      context: .
+      dockerfile: Dockerfile.Mysql
+    image: wjnnora/mysql:latest
+    container_name: mysql-container
+    restart: always
+    tty: true
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:      
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: fullcycle
+    networks:
+      - nora-network
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root --password=password || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  node: 
+    depends_on:
+      mysql:
+        condition: service_healthy
+    build:
+      context: .
+      dockerfile: Dockerfile.Node
+    image: wjnnora/node:latest
+    container_name: node-container
+    restart: always
+    tty: true
+    volumes:
+      - ./src:/app
+    networks:
+      - nora-network 
+
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.Nginx
+    image: wjnnora/nginx:latest
+    container_name: nginx-container
+    restart: always
+    ports:
+      - "8080:80"
+    networks:
+      - nora-network
+
+networks:
+ nora-network:
+  driver: bridge
+  name: nora-network
